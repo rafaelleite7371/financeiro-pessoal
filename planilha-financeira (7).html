@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Planilha Financeira</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #f7f6f2;
+  --white: #ffffff;
+  --border: #d9d6ce;
+  --border-dark: #b5b0a6;
+  --text: #1a1916;
+  --text2: #6b6760;
+  --text3: #a09d97;
+  --green: #1a6b45;
+  --green-bg: #e8f5ee;
+  --green-mid: #c3e8d3;
+  --red: #8b1a1a;
+  --red-bg: #faeaea;
+  --red-mid: #f2c4c4;
+  --amber: #7a4f00;
+  --amber-bg: #fef3e2;
+  --amber-mid: #fddfa0;
+  --blue: #1a3a6b;
+  --blue-bg: #e8eef8;
+  --blue-mid: #c3d3ef;
+  --accent: #2d5a8e;
+  --header-bg: #1a1916;
+  --header-text: #f7f6f2;
+  --stripe: #f2f0eb;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+.mono { font-family: 'IBM Plex Mono', monospace; }
+
+/* ── TOP BAR ── */
+.topbar {
+  background: var(--header-bg);
+  color: var(--header-text);
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.topbar-title { font-size: 14px; font-weight: 600; letter-spacing: .04em; }
+.topbar-sub { font-size: 11px; color: #888; margin-top: 1px; }
+.month-switcher { display: flex; align-items: center; gap: 6px; }
+.month-btn {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: var(--header-text);
+  width: 28px; height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.month-btn:hover { background: rgba(255,255,255,0.2); }
+.month-label {
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 90px;
+  text-align: center;
+  letter-spacing: .02em;
+}
+.add-month-btn {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.7);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: 'IBM Plex Sans', sans-serif;
+  transition: all .15s;
+  margin-left: 8px;
+}
+.add-month-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+/* ── LAYOUT ── */
+.page { padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+
+/* ── SUMMARY CARDS ── */
+.summary-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.scard {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+}
+.scard-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text2);
+  margin-bottom: 8px;
+}
+.scard-val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 18px;
+  font-weight: 600;
+}
+.scard-val.green { color: var(--green); }
+.scard-val.red { color: var(--red); }
+.scard-val.amber { color: var(--amber); }
+.scard-sub {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 4px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+/* ── MAIN GRID ── */
+.main-grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* ── TABLE PANEL ── */
+.panel {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.panel-head {
+  background: var(--header-bg);
+  color: var(--header-text);
+  padding: 9px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.panel-head-val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: #aaa;
+}
+
+/* TABLE */
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text2);
+  background: var(--stripe);
+  padding: 7px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+thead th.num { text-align: right; }
+tbody tr { border-bottom: 1px solid var(--border); }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--stripe); }
+tbody td {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text);
+  vertical-align: middle;
+}
+tbody td.num {
+  text-align: right;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+}
+tbody td.muted { color: var(--text3); font-size: 12px; }
+tfoot td {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--stripe);
+  border-top: 2px solid var(--border-dark);
+  font-family: 'IBM Plex Mono', monospace;
+  text-align: right;
+}
+tfoot td:first-child { text-align: left; font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+
+/* PARCELA BADGE */
+.parc {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: var(--amber-bg);
+  color: var(--amber);
+  border: 1px solid var(--amber-mid);
+  white-space: nowrap;
+}
+.parc.last { background: var(--green-bg); color: var(--green); border-color: var(--green-mid); }
+.parc.mensal { background: var(--blue-bg); color: var(--blue); border-color: var(--blue-mid); }
+.parc.avista { background: var(--stripe); color: var(--text2); border-color: var(--border); }
+
+/* PROGRESS BAR */
+.pbar-wrap { width: 80px; height: 5px; background: var(--border); border-radius: 2px; overflow: hidden; display: inline-block; vertical-align: middle; margin-left: 6px; }
+.pbar { height: 100%; border-radius: 2px; }
+
+/* CARD SECTION */
+.card-section { border-bottom: 1px solid var(--border); }
+.card-section:last-child { border-bottom: none; }
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--stripe);
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--border);
+}
+.card-header:hover { background: #ece9e3; }
+.card-name { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+.card-total { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: var(--red); }
+.chevron { font-size: 10px; color: var(--text3); transition: transform .2s; }
+.chevron.open { transform: rotate(180deg); }
+
+/* RECEITA / DESPESAS BLOCK */
+.summary-block { padding: 12px 14px; }
+.sb-row { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 0; border-bottom: 1px solid var(--border); }
+.sb-row:last-child { border-bottom: none; }
+.sb-label { font-size: 12px; color: var(--text2); }
+.sb-val { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; }
+.sb-val.green { color: var(--green); }
+.sb-val.red { color: var(--red); }
+.sb-val.amber { color: var(--amber); }
+.sb-total { display: flex; justify-content: space-between; padding: 8px 0 0; margin-top: 4px; border-top: 2px solid var(--border-dark); }
+.sb-total .sb-label { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+.sb-total .sb-val { font-size: 14px; }
+
+/* SALDO BOX */
+.saldo-box {
+  margin: 12px 14px;
+  padding: 12px 14px;
+  border-radius: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.saldo-box.pos { background: var(--green-bg); border: 1px solid var(--green-mid); }
+.saldo-box.neg { background: var(--red-bg); border: 1px solid var(--red-mid); }
+.saldo-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; }
+.saldo-label.pos { color: var(--green); }
+.saldo-label.neg { color: var(--red); }
+.saldo-val { font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; }
+.saldo-val.pos { color: var(--green); }
+.saldo-val.neg { color: var(--red); }
+
+/* ADD BUTTON */
+.add-row-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-top: 1px dashed var(--border);
+  color: var(--text3);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: 'IBM Plex Sans', sans-serif;
+  text-align: left;
+  transition: all .15s;
+}
+.add-row-btn:hover { color: var(--accent); background: var(--blue-bg); }
+
+/* ── FIXAS REALIZADO ROW ── */
+.fix-expand-row td { padding: 0 !important; }
+.fix-expand-inner {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 12px 8px 24px;
+  background: #fafaf7;
+  border-top: 1px dashed var(--border);
+}
+.fix-expand-label { font-size: 11px; color: var(--text2); white-space: nowrap; }
+.fix-realizado-input {
+  width: 100px; padding: 4px 7px;
+  border: 1px solid var(--border-dark); border-radius: 4px;
+  font-size: 12px; font-family: 'IBM Plex Mono', monospace;
+  background: #fff; color: var(--text); outline: none;
+}
+.fix-realizado-input:focus { border-color: var(--accent); }
+.fix-save-btn {
+  padding: 4px 9px; border-radius: 4px;
+  background: var(--header-bg); border: none; color: #fff;
+  font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.fix-save-btn:hover { background: #333; }
+.fix-prog-wrap { flex:1; height:4px; background:var(--border); border-radius:2px; overflow:hidden; min-width:30px; }
+.fix-prog-fill { height:100%; border-radius:2px; transition:width .3s; }
+.fix-delta { font-size:11px; font-family:'IBM Plex Mono',monospace; white-space:nowrap; }
+.fix-delta.ok   { color:var(--green); }
+.fix-delta.over { color:var(--red); }
+.fix-delta.part { color:var(--amber); }
+.fix-toggle { background:none;border:none;cursor:pointer;color:var(--text3);font-size:11px;padding:2px 4px;border-radius:3px;line-height:1; }
+.fix-toggle:hover { background:var(--stripe);color:var(--text2); }
+
+/* MODAL */
+.overlay { display:none; position:fixed; inset:0; background:rgba(26,25,22,.55); z-index:500; align-items:center; justify-content:center; backdrop-filter:blur(2px); }
+.overlay.open { display:flex; }
+.modal {
+  background: var(--white);
+  border: 1px solid var(--border-dark);
+  border-radius: 8px;
+  padding: 24px;
+  width: 420px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+  animation: mslide .18s ease;
+}
+@keyframes mslide { from { transform: translateY(8px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+.modal-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.modal-sub { font-size: 12px; color: var(--text2); margin-bottom: 18px; }
+.field { margin-bottom: 13px; }
+.field label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text2); display: block; margin-bottom: 5px; }
+.field input, .field select, .field textarea {
+  width: 100%;
+  padding: 9px 11px;
+  background: var(--bg);
+  border: 1px solid var(--border-dark);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  outline: none;
+  transition: border-color .15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); background: #fff; }
+.field select option { background: #fff; }
+.mrow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mactions { display: flex; gap: 8px; margin-top: 18px; }
+.mactions button { flex: 1; padding: 10px; border-radius: 5px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'IBM Plex Sans', sans-serif; border: none; transition: all .15s; }
+.btn-cancel { background: var(--stripe); color: var(--text2); border: 1px solid var(--border-dark) !important; }
+.btn-cancel:hover { background: var(--border); }
+.btn-save { background: var(--header-bg); color: #fff; }
+.btn-save:hover { background: #333; }
+.inst-wrap { display: none; }
+.info-tip { background: var(--blue-bg); border: 1px solid var(--blue-mid); border-radius: 4px; padding: 8px 11px; font-size: 12px; color: var(--blue); margin-bottom: 13px; line-height: 1.5; }
+
+/* OBS PANEL */
+.obs-panel { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 14px; margin-bottom: 16px; }
+.obs-head { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--text2); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+.obs-badge { font-size: 9px; background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue-mid); padding: 1px 6px; border-radius: 3px; text-transform: none; letter-spacing: 0; font-weight: 500; }
+.obs-ta { width: 100%; background: var(--bg); border: 1px solid var(--border-dark); border-radius: 4px; color: var(--text); font-size: 12px; line-height: 1.6; padding: 9px 11px; resize: vertical; min-height: 80px; outline: none; transition: border-color .15s; font-family: 'IBM Plex Sans', sans-serif; }
+.obs-ta:focus { border-color: var(--accent); background: #fff; }
+.obs-ta::placeholder { color: var(--text3); }
+.obs-save { margin-top: 8px; width: 100%; padding: 7px; background: var(--header-bg); border: none; border-radius: 4px; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'IBM Plex Sans', sans-serif; transition: background .15s; }
+.obs-save:hover { background: #333; }
+.obs-ok { font-size: 11px; color: var(--green); margin-top: 5px; opacity: 0; transition: opacity .3s; }
+.obs-ok.show { opacity: 1; }
+
+/* EMPTY */
+.empty-row td { text-align: center; color: var(--text3); font-size: 12px; padding: 16px; font-style: italic; }
+
+@media (max-width: 900px) {
+  .main-grid { grid-template-columns: 1fr; }
+  .summary-row { grid-template-columns: repeat(2, 1fr); }
+  .page { padding: 16px; }
+}
+
+/* ═══════════════════════════════════════
+   MOBILE — tela ≤ 600px
+═══════════════════════════════════════ */
+@media (max-width: 600px) {
+
+  /* Body com espaço para bottom nav */
+  body { padding-bottom: 72px; }
+
+  /* Topbar simplificada */
+  .topbar { padding: 0 14px; height: 52px; }
+  .topbar-title { font-size: 13px; }
+  .topbar-sub { display: none; }
+  .month-switcher { gap: 4px; }
+  .month-label { font-size: 14px; font-weight: 600; min-width: 90px; }
+  .month-btn { width: 36px; height: 36px; font-size: 18px; }
+  .add-month-btn { display: none; } /* movido para bottom nav */
+
+  /* Page */
+  .page { padding: 12px; }
+
+  /* KPI cards — 2 colunas */
+  .summary-row { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .scard { padding: 12px; }
+  .scard-label { font-size: 9px; margin-bottom: 6px; }
+  .scard-val { font-size: 16px; }
+
+  /* Tabelas — fonte e padding maiores para toque */
+  thead th { font-size: 10px; padding: 8px 10px; }
+  tbody td { padding: 10px 10px; font-size: 13px; }
+  tfoot td { padding: 8px 10px; font-size: 12px; }
+
+  /* Botões de ação — área de toque maior */
+  .add-row-btn { padding: 12px 14px; font-size: 13px; }
+  .panel-head { padding: 10px 14px; font-size: 11px; }
+  .panel-head-val { font-size: 12px; }
+
+  /* Card sections */
+  .card-header { padding: 11px 14px; }
+  .card-name { font-size: 12px; }
+  .card-total { font-size: 12px; }
+
+  /* Resumo lateral */
+  .sb-row { padding: 8px 14px; }
+  .sb-label { font-size: 12px; }
+  .sb-val { font-size: 13px; }
+  .sb-total { padding: 10px 14px; }
+  .summary-block { padding: 0; }
+  .saldo-box { padding: 12px 14px; }
+  .saldo-label { font-size: 11px; }
+  .saldo-val { font-size: 16px; }
+
+  /* Modal — ocupa tela toda na base (sheet) */
+  .overlay { align-items: flex-end; }
+  .modal {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    padding: 20px 20px 32px;
+    max-height: 90vh;
+  }
+  .modal h3 { font-size: 17px; margin-bottom: 6px; }
+  .modal p { font-size: 13px; margin-bottom: 18px; }
+
+  /* Campos do modal — maiores para teclado */
+  .field { margin-bottom: 16px; }
+  .field label { font-size: 11px; margin-bottom: 6px; }
+  .field input, .field select {
+    padding: 13px 12px;
+    font-size: 16px; /* evita zoom automático no iOS */
+    border-radius: 8px;
+  }
+  .mrow { grid-template-columns: 1fr; gap: 0; } /* empilha em mobile */
+  .mactions { gap: 10px; margin-top: 20px; }
+  .mactions button { padding: 14px; font-size: 15px; border-radius: 8px; }
+  .info-tip { font-size: 12px; padding: 10px 12px; }
+
+  /* Realizado (fixas) */
+  .fix-expand-inner { padding: 10px 14px 12px 18px; gap: 8px; flex-wrap: wrap; }
+  .fix-realizado-input { width: 120px; padding: 8px 10px; font-size: 15px; }
+  .fix-save-btn { padding: 8px 14px; font-size: 13px; }
+
+  /* Obs panel */
+  .obs-panel { padding: 14px; }
+  .obs-ta { font-size: 14px; min-height: 70px; }
+  .obs-save { padding: 12px; font-size: 14px; border-radius: 8px; }
+
+  /* Botões inline de editar/deletar — área de toque maior */
+  button[style*="font-size:12px"] { padding: 5px 8px !important; }
+  button[style*="font-size:14px"] { padding: 5px 8px !important; }
+
+  /* Menu de adicionar (add-menu) */
+  .add-menu button { padding: 14px 16px; font-size: 14px; border-radius: 8px; }
+
+  /* Parc badge */
+  .parc { font-size: 10px; padding: 2px 6px; }
+}
+
+/* ═══════════════════════════════════════
+   BOTTOM NAV (mobile)
+═══════════════════════════════════════ */
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--header-bg);
+  border-top: 1px solid rgba(255,255,255,.1);
+  z-index: 200;
+  height: 64px;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 8px;
+}
+@media (max-width: 600px) {
+  .bottom-nav { display: flex; }
+}
+.bn-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  background: none; border: none; color: rgba(255,255,255,.6);
+  cursor: pointer; font-family: 'IBM Plex Sans', sans-serif;
+  padding: 8px 12px; border-radius: 8px; transition: all .15s;
+  flex: 1;
+}
+.bn-btn:hover, .bn-btn:active { background: rgba(255,255,255,.1); color: #fff; }
+.bn-btn.add { color: #6ee7a8; }
+.bn-icon { font-size: 20px; line-height: 1; }
+.bn-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div>
+    <div class="topbar-title">Planilha Financeira</div>
+    <div class="topbar-sub" id="topbar-sub">Receitas × Despesas</div>
+  </div>
+  <div class="month-switcher">
+    <button class="month-btn" onclick="nav(-1)">&#8592;</button>
+    <span class="month-label" id="mlbl"></span>
+    <button class="month-btn" onclick="nav(1)">&#8594;</button>
+    <button class="add-month-btn" onclick="addMonth()">+ Mês</button>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- SUMMARY -->
+  <div class="summary-row" id="summary-row"></div>
+
+  <div class="main-grid">
+
+    <!-- LEFT: Receitas + Saldo -->
+    <div>
+
+      <!-- RECEITAS -->
+      <div class="panel" id="panel-receitas">
+        <div class="panel-head">
+          <span>Receitas</span>
+          <span class="panel-head-val" id="total-receitas-head"></span>
+        </div>
+        <div class="summary-block" id="receitas-body"></div>
+        <button class="add-row-btn" onclick="openModal('receita')">＋ Adicionar receita</button>
+      </div>
+
+      <!-- DESPESAS FIXAS -->
+      <div class="panel">
+        <div class="panel-head">
+          <span>Despesas Fixas</span>
+          <span class="panel-head-val" id="total-fixas-head"></span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Descrição</th>
+              <th>Parcela</th>
+              <th class="num">Previsto</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="fixas-body"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2">Total Fixas</td>
+              <td id="total-fixas-foot"></td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+        <button class="add-row-btn" onclick="openModal('fixa')">＋ Adicionar despesa fixa</button>
+      </div>
+
+      <!-- SALDO -->
+      <div class="panel">
+        <div class="panel-head"><span>Saldo do Mês</span></div>
+        <div id="saldo-block"></div>
+      </div>
+
+      <!-- OBSERVAÇÕES -->
+      <div class="obs-panel">
+        <div class="obs-head">Observações <span class="obs-badge">global</span></div>
+        <textarea class="obs-ta" id="obs-ta" placeholder="Anotações gerais, metas, lembretes..."></textarea>
+        <button class="obs-save" onclick="saveObs()">Salvar</button>
+        <div class="obs-ok" id="obs-ok">✓ Salvo</div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: Cartões + Compras dia a dia -->
+    <div>
+
+      <!-- COMPRAS PARCELADAS POR CARTÃO -->
+      <div class="panel">
+        <div class="panel-head">
+          <span>Compras Parceladas — Cartões</span>
+          <span class="panel-head-val" id="total-cartoes-head"></span>
+        </div>
+        <div id="cartoes-body"></div>
+        <button class="add-row-btn" onclick="openModal('parcela')">＋ Adicionar compra parcelada</button>
+      </div>
+
+      <!-- COMPRAS DO DIA A DIA -->
+      <div class="panel">
+        <div class="panel-head">
+          <span>Compras do Dia a Dia</span>
+          <span class="panel-head-val" id="total-diadia-head"></span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Descrição</th>
+              <th>Forma Pgto</th>
+              <th class="num">Valor</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="diadia-body"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2">Total Dia a Dia</td>
+              <td id="total-diadia-foot"></td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+        <button class="add-row-btn" onclick="openModal('diadia')">＋ Adicionar gasto do dia</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-title" id="m-title">Adicionar</div>
+    <div class="modal-sub" id="m-sub"></div>
+    <div id="m-fields"></div>
+    <div class="mactions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveModal()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════
+const fmt = v => 'R$ ' + Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+let seq = 1;
+const uid = () => seq++;
+let globalObs = '';
+const g = id => { const e = document.getElementById(id); return e ? e.value : null; };
+
+// ══════════════════════════════════════════════
+//  DADOS — começa em Mar/2026
+// ══════════════════════════════════════════════
+let months = ['Mar/2026','Abr/2026','Mai/2026','Jun/2026','Jul/2026'];
+let mi = 0;
+
+let gReceitas = [
+  {id:uid(), n:'Salário Líquido', v:5891.73},
+  {id:uid(), n:'Benefícios',      v:1000},
+];
+let gFixas = [
+  {id:uid(), n:'Aluguel',           parc:'mensal', v:1924},
+  {id:uid(), n:'Internet + Celular',parc:'mensal', v:115},
+  {id:uid(), n:'Gympass',           parc:'mensal', v:150},
+  {id:uid(), n:'Assefaz Sociall',   parc:'mensal', v:85},
+  {id:uid(), n:'Plano de Saúde',    parc:'mensal', v:230},
+  {id:uid(), n:'Inter',             parc:'1 de 11',v:54.54, ia:1, it:11, sm:0},
+  {id:uid(), n:'Mercado',           parc:'mensal', v:500},
+  {id:uid(), n:'Água',              parc:'mensal', v:30},
+  {id:uid(), n:'Almoço MAPA',       parc:'mensal', v:660},
+  {id:uid(), n:'Energia',           parc:'mensal', v:200},
+  {id:uid(), n:'Cabelo',            parc:'mensal', v:50},
+  {id:uid(), n:'Ônibus',            parc:'mensal', v:228},
+  {id:uid(), n:'Parcela Computador',parc:'mensal', v:664.42},
+  {id:uid(), n:'Lavagem Roupa',     parc:'mensal', v:272},
+  {id:uid(), n:'Investimento',      parc:'mensal', v:600},
+];
+let gParcelas = [
+  {id:uid(), cartao:'C6',        n:'Casas Bahia',       v:121.45, ia:8,  it:10, sm:0},
+  {id:uid(), cartao:'C6',        n:'Mercado Livre',     v:159.25, ia:8,  it:12, sm:0},
+  {id:uid(), cartao:'C6',        n:'Eletrolux',         v:180.89, ia:8,  it:10, sm:0},
+  {id:uid(), cartao:'C6',        n:'Decorando Lei Seca',v:185.02, ia:3,  it:4,  sm:0},
+  {id:uid(), cartao:'C6',        n:'Amazon Tablet',     v:154.90, ia:2,  it:10, sm:0},
+  {id:uid(), cartao:'C6',        n:'Capacete',          v:76.28,  ia:2,  it:3,  sm:0},
+  {id:uid(), cartao:'C6',        n:'Airbnb',            v:120.43, ia:2,  it:4,  sm:0},
+  {id:uid(), cartao:'C6',        n:'Rock in Rio',       v:79.50,  ia:2,  it:5,  sm:0},
+  {id:uid(), cartao:'CAIXA',     n:'Meu Esquematizado', v:62.93,  ia:1,  it:4,  sm:0},
+  {id:uid(), cartao:'CAIXA',     n:'Amazon',            v:84.45,  ia:5,  it:12, sm:0},
+  {id:uid(), cartao:'CAIXA',     n:'Mercado Livre',     v:52.21,  ia:3,  it:3,  sm:0},
+  {id:uid(), cartao:'CAIXA',     n:'Cacau Show',        v:70.00,  ia:1,  it:3,  sm:0},
+  {id:uid(), cartao:'Recargapay',n:'Ar Condicionado',   v:168.20, ia:8,  it:12, sm:0},
+  {id:uid(), cartao:'Will',      n:'Will',              v:13.90,  ia:6,  it:12, sm:0},
+  {id:uid(), cartao:'Mudança C6',n:'Passagem Azul',     v:511.35, ia:2,  it:4,  sm:0, excluir:true},
+  {id:uid(), cartao:'Mudança C6',n:'Panelas',           v:194.61, ia:1,  it:2,  sm:0, excluir:true},
+  {id:uid(), cartao:'Mudança C6',n:'Colchão',           v:422.01, ia:1,  it:3,  sm:0, excluir:true},
+];
+const mData = {};
+months.forEach(m => mData[m] = {receitas:[], avulsas:[], diadia:[]});
+mData['Mar/2026'].avulsas = [
+  {id:uid(), cartao:'C6',        n:'CEA',           v:79.99},
+  {id:uid(), cartao:'C6',        n:'RENNER',        v:89.95},
+  {id:uid(), cartao:'Renner',    n:'Roupas',        v:120.00},
+  {id:uid(), cartao:'Recargapay',n:'Recarga Celular',v:20.00},
+];
+mData['Mar/2026'].diadia = [
+  {id:uid(), n:'Mercado',        pgto:'Cartão C6',    v:130.19},
+  {id:uid(), n:'Comida',         pgto:'Cartão C6',    v:24.23},
+  {id:uid(), n:'Transporte',     pgto:'Cartão C6',    v:3.80},
+  {id:uid(), n:'Comida almoço',  pgto:'Cartão C6',    v:30.88},
+  {id:uid(), n:'Uber hospital',  pgto:'Cartão C6',    v:19.10},
+  {id:uid(), n:'Comida iFood',   pgto:'Cartão C6',    v:38.69},
+  {id:uid(), n:'Farmácia',       pgto:'Cartão CAIXA', v:50.01},
+  {id:uid(), n:'Farmácia',       pgto:'Cartão CAIXA', v:136.80},
+  {id:uid(), n:'Lavagem roupas', pgto:'Dinheiro',     v:16.50},
+];
+
+// ══════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════
+const curM = () => months[mi];
+const iaFor = (p, idx) => p.ia + (idx - p.sm);
+const parcelasOf = idx => gParcelas.filter(p => {
+  if(idx < p.sm) return false;
+  const ia = iaFor(p, idx); return ia >= 1 && ia <= p.it;
+});
+function sumReceitas(m) {
+  return gReceitas.reduce((s,r)=>s+r.v,0) + (mData[m]?.receitas||[]).reduce((s,r)=>s+r.v,0);
+}
+function sumFixas() { return gFixas.reduce((s,f)=>s+f.v,0); }
+function sumCartoes(m) {
+  const idx = months.indexOf(m);
+  // Mudança C6 (excluir:true) não entra no total
+  return parcelasOf(idx).filter(p=>!p.excluir).reduce((s,p)=>s+p.v,0)
+       + (mData[m]?.avulsas||[]).filter(a=>!a.excluir).reduce((s,a)=>s+a.v,0);
+}
+// Dia a dia é informativo — não entra no total de despesas
+function sumDiadia(m) { return (mData[m]?.diadia||[]).reduce((s,d)=>s+d.v,0); }
+function sumDespesas(m) { return sumFixas() + sumCartoes(m); }
+function saldo(m) { return sumReceitas(m) - sumDespesas(m); }
+
+// ══════════════════════════════════════════════
+//  NAVEGAÇÃO
+// ══════════════════════════════════════════════
+function nav(d) { mi = Math.max(0, Math.min(months.length-1, mi+d)); render(); }
+function addMonth() {
+  const last = months[months.length-1];
+  const [mn,yr] = last.split('/');
+  const mN = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  let idx = mN.indexOf(mn)+1, ny = parseInt(yr);
+  if(idx > 11){idx=0;ny++;}
+  const lbl = mN[idx]+'/'+ny;
+  if(!months.includes(lbl)){ months.push(lbl); mData[lbl] = {receitas:[], avulsas:[], diadia:[]}; }
+  mi = months.length-1; render();
+}
+
+// ══════════════════════════════════════════════
+//  EDIÇÃO — estado do modal
+// ══════════════════════════════════════════════
+let openCards = {};
+let modalType = '', editId = null;
+
+// ══════════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════════
+function render() {
+  const m = curM(), idx = mi;
+  document.getElementById('mlbl').textContent = m;
+  document.getElementById('topbar-sub').textContent = 'Receitas × Despesas — ' + m;
+
+  const totalR = sumReceitas(m), totalF = sumFixas(), totalC = sumCartoes(m),
+        totalD = sumDiadia(m), totalDesp = sumDespesas(m), sal = saldo(m);
+
+  // SUMMARY CARDS
+  document.getElementById('summary-row').innerHTML = [
+    {l:'Total Receitas', v:fmt(totalR),    cls:'green'},
+    {l:'Total Despesas', v:fmt(totalDesp), cls:'red'},
+    {l:'Despesas Fixas', v:fmt(totalF),    cls:''},
+    {l:'Cartões',        v:fmt(totalC),    cls:'red'},
+    {l:'Saldo do Mês',   v:fmt(sal),       cls: sal>=0?'green':'red'},
+  ].map(c=>`<div class="scard">
+    <div class="scard-label">${c.l}</div>
+    <div class="scard-val mono ${c.cls}">${c.v}</div>
+  </div>`).join('');
+
+  // RECEITAS
+  const allReceitas = [...gReceitas, ...(mData[m].receitas||[])];
+  document.getElementById('total-receitas-head').textContent = fmt(totalR);
+  document.getElementById('receitas-body').innerHTML =
+    allReceitas.map(r=>{
+      const isG = gReceitas.some(x=>x.id===r.id);
+      return `<div class="sb-row">
+        <span class="sb-label">
+          ${r.n}${!isG?' <span style="font-size:10px;background:#fef3e2;color:#7a4f00;border:1px solid #fddfa0;padding:1px 5px;border-radius:3px">extra</span>':''}
+        </span>
+        <span style="display:flex;align-items:center;gap:6px">
+          <span class="sb-val green">${fmt(r.v)}</span>
+          <button onclick="openEdit('rec','${m}',${r.id})" style="${editBtn}">✏️</button>
+          <button onclick="delRec('${m}',${r.id})" style="${delBtn}">×</button>
+        </span>
+      </div>`;
+    }).join('') +
+    `<div class="sb-total"><span class="sb-label">Total Receitas</span><span class="sb-val green">${fmt(totalR)}</span></div>`;
+
+  // FIXAS — linha expansível com campo de realizado
+  if(!mData[m].pagoFixas) mData[m].pagoFixas = {};
+  if(!window.fixaOpen) window.fixaOpen = {};
+  document.getElementById('total-fixas-head').textContent = fmt(totalF);
+  document.getElementById('total-fixas-foot').textContent = fmt(totalF);
+
+  document.getElementById('fixas-body').innerHTML = gFixas.map(f=>{
+    const isParc    = f.ia !== undefined;
+    const iaAtual   = isParc ? iaFor(f, idx) : null;
+    const restam    = isParc ? f.it - iaAtual : null;
+    const pct       = isParc ? Math.round((iaAtual/f.it)*100) : 0;
+    const badgeCls  = !isParc ? 'mensal' : restam===0 ? 'last' : '';
+    const badgeText = !isParc ? 'mensal' : `${iaAtual} de ${f.it}`;
+    const barColor  = pct>90 ? '#1a6b45' : pct>70 ? '#c47c00' : '#2d5a8e';
+    const realizado = mData[m].pagoFixas[f.id] || 0;
+    const isOpen    = window.fixaOpen[m+'_'+f.id];
+
+    // mini indicador na linha principal quando tem realizado
+    const realizadoTag = realizado > 0
+      ? `<span style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:${realizado>=f.v?'#1a6b45':'#7a4f00'};margin-left:6px">${fmt(realizado)}</span>`
+      : '';
+
+    const mainRow = `<tr>
+      <td>
+        <button class="fix-toggle" onclick="toggleFixaRow('${m}',${f.id})">${isOpen?'▲':'▼'}</button>
+        ${f.n}${realizadoTag}
+      </td>
+      <td>
+        <span class="parc ${badgeCls}">${badgeText}</span>
+        ${isParc?`<div class="pbar-wrap" style="width:48px"><div class="pbar" style="width:${pct}%;background:${barColor}"></div></div>`:''}
+        ${isParc&&restam>0?`<span style="font-size:10px;color:var(--text3);margin-left:3px">(${restam}r)</span>`:''}
+      </td>
+      <td class="num">${fmt(f.v)}</td>
+      <td style="text-align:right;white-space:nowrap">
+        <button onclick="openEdit('fix','${m}',${f.id})" style="${editBtn}">✏️</button>
+        <button onclick="delFixa(${f.id})" style="${delBtn}">×</button>
+      </td>
+    </tr>`;
+
+    if(!isOpen) return mainRow;
+
+    // barra de progresso do realizado
+    const rPct   = f.v > 0 ? Math.min(Math.round((realizado/f.v)*100),100) : 0;
+    const rColor = rPct>=100 ? '#1a6b45' : rPct>0 ? '#c47c00' : '#d4d0c8';
+    const delta  = realizado - f.v;
+    const deltaHtml = realizado > 0
+      ? `<span class="fix-delta ${rPct>=100?(delta>0?'over':'ok'):'part'}">${rPct>=100&&delta<=0?'✓ Quitado':rPct>=100?'+'+fmt(delta):(rPct+'%')}</span>`
+      : '';
+
+    const expandRow = `<tr class="fix-expand-row">
+      <td colspan="4">
+        <div class="fix-expand-inner">
+          <span class="fix-expand-label">Realizado:</span>
+          <input class="fix-realizado-input" id="real_${f.id}"
+            type="number" step="0.01" value="${realizado||''}" placeholder="0,00"
+            onkeydown="if(event.key==='Enter')salvarRealizado('${m}',${f.id},${f.v})"/>
+          <button class="fix-save-btn" onclick="salvarRealizado('${m}',${f.id},${f.v})">OK</button>
+          <div class="fix-prog-wrap"><div class="fix-prog-fill" style="width:${rPct}%;background:${rColor}"></div></div>
+          ${deltaHtml}
+        </div>
+      </td>
+    </tr>`;
+
+    return mainRow + expandRow;
+  }).join('') || `<tr class="empty-row"><td colspan="4">Nenhuma despesa fixa.</td></tr>`;
+
+  // CARTÕES — Mudança C6 marcada como não contabilizada
+  document.getElementById('total-cartoes-head').textContent = fmt(totalC);
+  const grupos = {};
+  parcelasOf(idx).forEach(p=>{
+    if(!grupos[p.cartao]) grupos[p.cartao]=[];
+    const ia = iaFor(p,idx);
+    grupos[p.cartao].push({...p, iaAtual:ia, restam:p.it-ia, _g:true});
+  });
+  (mData[m].avulsas||[]).forEach(a=>{
+    if(!grupos[a.cartao]) grupos[a.cartao]=[];
+    grupos[a.cartao].push({...a, iaAtual:0, restam:0, avista:true, _g:false});
+  });
+
+  document.getElementById('cartoes-body').innerHTML = Object.entries(grupos).map(([cartao,items])=>{
+    const key  = m+'_'+cartao;
+    if(!(key in openCards)) openCards[key] = true;
+    const open = openCards[key];
+    const totContab = items.filter(x=>!x.excluir).reduce((s,x)=>s+x.v,0);
+    const totExcl   = items.filter(x=> x.excluir).reduce((s,x)=>s+x.v,0);
+    const tot = totContab + totExcl;
+
+    const rows = !open ? '' : items.map(x=>{
+      const pct      = x.avista ? 0 : Math.round((x.iaAtual/x.it)*100);
+      const barColor = pct>90?'#1a6b45':pct>70?'#c47c00':'#2d5a8e';
+      const badge    = x.avista
+        ? `<span class="parc avista">à vista</span>`
+        : x.restam===0
+          ? `<span class="parc last">${x.iaAtual} de ${x.it}</span>`
+          : `<span class="parc">${x.iaAtual} de ${x.it}</span>`;
+      const excTag = x.excluir
+        ? `<span style="font-size:9px;background:#f0ede7;color:#a09d97;border:1px solid #d4d0c8;padding:1px 5px;border-radius:3px;margin-left:5px">não contabilizado</span>`
+        : '';
+      return `<tr style="${x.excluir?'opacity:.6':''}">
+        <td>${x.n}${excTag}</td>
+        <td>${badge}
+          ${!x.avista&&x.restam>0?`<span style="font-size:10px;color:var(--text3);margin-left:4px">${x.restam} rest.</span>`:''}
+          ${!x.avista?`<div class="pbar-wrap"><div class="pbar" style="width:${pct}%;background:${barColor}"></div></div>`:''}
+        </td>
+        <td class="num" style="${x.excluir?'color:var(--text3)':''}">
+          ${fmt(x.v)}${x.excluir?'<span style="font-size:9px;color:#a09d97;margin-left:3px">*</span>':''}
+        </td>
+        <td style="text-align:right;white-space:nowrap">
+          <button onclick="openEdit('parc','${m}',${x.id})" style="${editBtn}">✏️</button>
+          <button onclick="${x._g?`delParcela(${x.id})`:`delAvulsa(${x.id})`}" style="${delBtn}">×</button>
+        </td>
+      </tr>`;
+    }).join('');
+
+    const addRow = !open ? '' : `<tr><td colspan="4" style="padding:0">
+      <button onclick="openModalCartao('${m}','${cartao}')" style="display:flex;align-items:center;gap:4px;width:100%;padding:6px 12px;background:none;border:none;border-top:1px dashed var(--border);color:var(--text3);font-size:11px;cursor:pointer;font-family:inherit">
+        ＋ Item no ${cartao}
+      </button>
+    </td></tr>`;
+
+    const notaExcl = totExcl > 0
+      ? `<span style="font-size:10px;color:var(--text3);margin-left:6px">+${fmt(totExcl)} fora do total</span>`
+      : '';
+
+    return `<div class="card-section">
+      <div class="card-header" onclick="toggleCard('${key}')">
+        <span class="card-name">💳 ${cartao}
+          <span style="font-size:9px;background:var(--stripe);border:1px solid var(--border);padding:1px 5px;border-radius:2px;font-weight:400;color:var(--text2)">${items.length} item${items.length>1?'s':''}</span>
+        </span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="card-total">${fmt(totContab)}</span>${notaExcl}
+          <button onclick="event.stopPropagation();openEditCartaoNome('${m}','${cartao}')" style="${editBtn}">✏️</button>
+          <span class="chevron ${open?'open':''}">▼</span>
+        </div>
+      </div>
+      ${open?`<table><thead><tr><th>Item</th><th>Parcela</th><th class="num">Valor</th><th></th></tr></thead><tbody>${rows}${addRow}</tbody></table>`:''}
+    </div>`;
+  }).join('') || `<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px;font-style:italic">Nenhuma compra parcelada neste mês.</div>`;
+
+  // DIA A DIA — informativo, fora do total de despesas
+  const diadia  = mData[m].diadia || [];
+  const totalDD = diadia.reduce((s,x)=>s+x.v,0);
+  document.getElementById('total-diadia-head').textContent = fmt(totalDD) + ' (informativo)';
+  document.getElementById('total-diadia-foot').textContent = fmt(totalDD);
+  document.getElementById('diadia-body').innerHTML = diadia.map(x=>`<tr>
+    <td>${x.n}</td>
+    <td class="muted">${x.pgto||'—'}</td>
+    <td class="num">${fmt(x.v)}</td>
+    <td style="text-align:right;white-space:nowrap">
+      <button onclick="openEdit('dia','${m}',${x.id})" style="${editBtn}">✏️</button>
+      <button onclick="delDiadia(${x.id})" style="${delBtn}">×</button>
+    </td>
+  </tr>`).join('') || `<tr class="empty-row"><td colspan="4">Nenhum gasto do dia.</td></tr>`;
+
+  // SALDO
+  document.getElementById('saldo-block').innerHTML = `
+    <div class="summary-block">
+      <div class="sb-row"><span class="sb-label">Total Receitas</span><span class="sb-val green">${fmt(totalR)}</span></div>
+      <div class="sb-row"><span class="sb-label">Despesas Fixas</span><span class="sb-val">${fmt(totalF)}</span></div>
+      <div class="sb-row"><span class="sb-label">Cartões</span><span class="sb-val red">${fmt(totalC)}</span></div>
+      <div class="sb-row" style="opacity:.6">
+        <span class="sb-label">Dia a Dia <span style="font-size:9px;background:#f0ede7;color:#a09d97;border:1px solid #d4d0c8;padding:1px 5px;border-radius:3px;margin-left:4px">informativo</span></span>
+        <span class="sb-val" style="color:var(--text2)">${fmt(totalD)}</span>
+      </div>
+      <div class="sb-row"><span class="sb-label">Total Despesas</span><span class="sb-val red">${fmt(totalDesp)}</span></div>
+    </div>
+    <div class="saldo-box ${sal>=0?'pos':'neg'}">
+      <span class="saldo-label ${sal>=0?'pos':'neg'}">${sal>=0?'Saldo Positivo':'Saldo Negativo'}</span>
+      <span class="saldo-val ${sal>=0?'pos':'neg'}">${fmt(Math.abs(sal))}</span>
+    </div>`;
+
+  const ta = document.getElementById('obs-ta');
+  if(ta && ta.value !== globalObs) ta.value = globalObs;
+}
+
+function toggleFixaRow(m, fixaId) {
+  const key = m+'_'+fixaId;
+  window.fixaOpen = window.fixaOpen || {};
+  window.fixaOpen[key] = !window.fixaOpen[key];
+  render();
+  // foca o input se abriu
+  if(window.fixaOpen[key]) setTimeout(()=>{ const el=document.getElementById('real_'+fixaId); if(el){el.focus();el.select();} },30);
+}
+function salvarRealizado(m, fixaId, previsto) {
+  const el = document.getElementById('real_'+fixaId);
+  if(!el) return;
+  const val = parseFloat(el.value) || 0;
+  if(!mData[m].pagoFixas) mData[m].pagoFixas = {};
+  mData[m].pagoFixas[fixaId] = val;
+  render();
+}
+const editBtn = 'background:none;border:none;cursor:pointer;color:var(--text3);font-size:12px;padding:2px 5px;border-radius:3px;';
+const delBtn  = 'background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:2px 5px;border-radius:3px;line-height:1;';
+
+function toggleCard(k){ openCards[k]=!openCards[k]; render(); }
+
+// ══════════════════════════════════════════════
+//  DELETE
+// ══════════════════════════════════════════════
+function delRec(m,id){
+  if(gReceitas.some(r=>r.id===id)){if(!confirm('Remover de todos os meses?'))return;gReceitas=gReceitas.filter(r=>r.id!==id);}
+  else mData[m].receitas=mData[m].receitas.filter(r=>r.id!==id);
+  render();
+}
+function delFixa(id){ if(!confirm('Remover de todos os meses?'))return; gFixas=gFixas.filter(f=>f.id!==id); render(); }
+function delParcela(id){ if(!confirm('Remover de todos os meses restantes?'))return; gParcelas=gParcelas.filter(p=>p.id!==id); render(); }
+function delAvulsa(id){ mData[curM()].avulsas=mData[curM()].avulsas.filter(a=>a.id!==id); render(); }
+function delDiadia(id){ mData[curM()].diadia=mData[curM()].diadia.filter(d=>d.id!==id); render(); }
+
+// ══════════════════════════════════════════════
+//  MODAL — ABERTURA
+// ══════════════════════════════════════════════
+const PGTO = ['Cartão C6','Cartão CAIXA','Cartão Recargapay','Cartão Will','Cartão Renner','Dinheiro','PIX','Débito','Outro'];
+
+function openModal(type) {
+  modalType = type; editId = null;
+  const titles = {receita:'Nova Receita', fixa:'Nova Despesa Fixa', parcela:'Nova Compra Parcelada', diadia:'Novo Gasto do Dia'};
+  const subs   = {receita:'Receita extra — restrita ao mês atual.', fixa:'Despesa global — aparece em todos os meses.', parcela:'Parcelada — avança automaticamente nos próximos meses.', diadia:'Gasto do dia — apenas neste mês.'};
+  document.getElementById('m-title').textContent = titles[type]||'Adicionar';
+  document.getElementById('m-sub').textContent   = subs[type]||'';
+  document.getElementById('m-fields').innerHTML  = fieldsFor(type, null, null);
+  toggleInst();
+  document.getElementById('overlay').classList.add('open');
+}
+
+// Abre modal de parcela já com cartão pré-selecionado
+function openModalCartao(m, cartao) {
+  modalType = 'parcela'; editId = null;
+  document.getElementById('m-title').textContent = 'Nova Compra — ' + cartao;
+  document.getElementById('m-sub').textContent   = 'Parcelada ou à vista neste cartão.';
+  document.getElementById('m-fields').innerHTML  = fieldsFor('parcela', null, cartao);
+  toggleInst();
+  document.getElementById('overlay').classList.add('open');
+}
+
+// Editar nome do cartão (renomeia em todas as parcelas)
+function openEditCartaoNome(m, cartaoAtual) {
+  modalType = 'edit_cartao'; editId = cartaoAtual;
+  document.getElementById('m-title').textContent = 'Renomear Cartão';
+  document.getElementById('m-sub').textContent   = 'Altera o nome em todas as compras deste cartão.';
+  document.getElementById('m-fields').innerHTML  = `<div class="field"><label>Nome do cartão</label><input id="fn" value="${cartaoAtual}" placeholder="Ex: Nubank, C6..."/></div>`;
+  document.getElementById('overlay').classList.add('open');
+}
+
+// Editar qualquer item existente
+function openEdit(type, m, id) {
+  editId = id; modalType = type;
+  let item, title, fieldsHTML;
+
+  if(type==='rec'){
+    item = gReceitas.find(r=>r.id===id) || mData[m].receitas.find(r=>r.id===id);
+    title = 'Editar Receita';
+    fieldsHTML = `
+      <div class="field"><label>Nome</label><input id="fn" value="${item.n}"/></div>
+      <div class="field"><label>Valor (R$)</label><input id="fv" type="number" step="0.01" value="${item.v}"/></div>`;
+  } else if(type==='fix'){
+    item = gFixas.find(f=>f.id===id);
+    title = 'Editar Despesa Fixa';
+    const isParc = item.ia !== undefined;
+    fieldsHTML = `
+      <div class="field"><label>Descrição</label><input id="fn" value="${item.n}"/></div>
+      <div class="mrow">
+        <div class="field"><label>Valor (R$)</label><input id="fv" type="number" step="0.01" value="${item.v}"/></div>
+        <div class="field"><label>Tipo</label><select id="ftipo" onchange="toggleInst()">
+          <option value="mensal" ${!isParc?'selected':''}>Mensal</option>
+          <option value="parcelado" ${isParc?'selected':''}>Parcelado</option>
+        </select></div>
+      </div>
+      <div class="inst-wrap" id="inst-wrap" ${isParc?'style="display:block"':''}>
+        <div class="mrow">
+          <div class="field"><label>Parcela atual</label><input id="fia" type="number" value="${item.ia||1}"/></div>
+          <div class="field"><label>Total parcelas</label><input id="fit" type="number" value="${item.it||''}"/></div>
+        </div>
+      </div>`;
+  } else if(type==='parc'){
+    item = gParcelas.find(p=>p.id===id) || mData[m].avulsas.find(a=>a.id===id);
+    title = 'Editar Compra';
+    const isParc = !!item.ia;
+    fieldsHTML = `
+      <div class="field"><label>Cartão</label><input id="fcartao" value="${item.cartao}"/></div>
+      <div class="field"><label>Descrição</label><input id="fn" value="${item.n}"/></div>
+      <div class="mrow">
+        <div class="field"><label>Valor (R$)</label><input id="fv" type="number" step="0.01" value="${item.v}"/></div>
+        <div class="field"><label>Tipo</label><select id="ftipo" onchange="toggleInst()">
+          <option value="parcelado" ${isParc?'selected':''}>Parcelado</option>
+          <option value="avista" ${!isParc?'selected':''}>À vista</option>
+        </select></div>
+      </div>
+      <div class="inst-wrap" id="inst-wrap" ${isParc?'style="display:block"':''}>
+        <div class="mrow">
+          <div class="field"><label>Parcela atual</label><input id="fia" type="number" value="${item.ia||1}"/></div>
+          <div class="field"><label>Total parcelas</label><input id="fit" type="number" value="${item.it||''}"/></div>
+        </div>
+      </div>`;
+  } else if(type==='dia'){
+    item = mData[m].diadia.find(d=>d.id===id);
+    title = 'Editar Gasto';
+    fieldsHTML = `
+      <div class="field"><label>Descrição</label><input id="fn" value="${item.n}"/></div>
+      <div class="mrow">
+        <div class="field"><label>Valor (R$)</label><input id="fv" type="number" step="0.01" value="${item.v}"/></div>
+        <div class="field"><label>Pagamento</label><select id="fpgto">${PGTO.map(p=>`<option ${item.pgto===p?'selected':''}>${p}</option>`).join('')}</select></div>
+      </div>`;
+  }
+
+  document.getElementById('m-title').textContent = title||'Editar';
+  document.getElementById('m-sub').textContent   = '';
+  document.getElementById('m-fields').innerHTML  = fieldsHTML;
+  toggleInst();
+  document.getElementById('overlay').classList.add('open');
+}
+
+// ══════════════════════════════════════════════
+//  MODAL — CAMPOS (para inserção)
+// ══════════════════════════════════════════════
+function fieldsFor(type, _, cartaoPre) {
+  if(type==='receita') return `
+    <div class="field"><label>Nome</label><input id="fn" placeholder="Ex: Freelance, 13º salário..."/></div>
+    <div class="field"><label>Valor (R$)</label><input id="fv" type="number" step="0.01" placeholder="0,00"/></div>`;
+  if(type==='fixa') return `
+    <div class="field"><label>Descrição</label><input id="fn" placeholder="Ex: Streaming, Academia..."/></div>
+    <div class="mrow">
+      <div class="field"><label>Valor (R$)</label><input id="fv" type="number" step="0.01" placeholder="0,00"/></div>
+      <div class="field"><label>Tipo</label><select id="ftipo" onchange="toggleInst()">
+        <option value="mensal">Mensal</option>
+        <option value="parcelado">Parcelado</option>
+      </select></div>
+    </div>
+    <div class="inst-wrap" id="inst-wrap">
+      <div class="mrow">
+        <div class="field"><label>Parcela atual</label><input id="fia" type="number" value="1"/></div>
+        <div class="field"><label>Total parcelas</label><input id="fit" type="number" placeholder="12"/></div>
+      </div>
+    </div>`;
+  if(type==='parcela') return `
+    <div class="field"><label>Cartão</label><input id="fcartao" value="${cartaoPre||''}" placeholder="Ex: C6, Nubank, CAIXA..."/></div>
+    <div class="field"><label>Descrição</label><input id="fn" placeholder="Ex: Notebook, Viagem..."/></div>
+    <div class="mrow">
+      <div class="field"><label>Valor da parcela (R$)</label><input id="fv" type="number" step="0.01" placeholder="0,00"/></div>
+      <div class="field"><label>Tipo</label><select id="ftipo" onchange="toggleInst()">
+        <option value="parcelado">Parcelado</option>
+        <option value="avista">À vista</option>
+      </select></div>
+    </div>
+    <div class="inst-wrap" id="inst-wrap" style="display:block">
+      <div class="mrow">
+        <div class="field"><label>Parcela atual</label><input id="fia" type="number" value="1"/></div>
+        <div class="field"><label>Total parcelas</label><input id="fit" type="number" placeholder="12"/></div>
+      </div>
+      <div class="info-tip">💡 Aparece automaticamente nos meses seguintes com a parcela incrementada.</div>
+    </div>`;
+  if(type==='diadia') return `
+    <div class="field"><label>Descrição</label><input id="fn" placeholder="Ex: Mercado, iFood, Uber..."/></div>
+    <div class="mrow">
+      <div class="field"><label>Valor (R$)</label><input id="fv" type="number" step="0.01" placeholder="0,00"/></div>
+      <div class="field"><label>Forma de pagamento</label><select id="fpgto">${PGTO.map(p=>`<option>${p}</option>`).join('')}</select></div>
+    </div>`;
+  return '';
+}
+
+function toggleInst() {
+  const w = document.getElementById('inst-wrap'), t = document.getElementById('ftipo');
+  if(w && t) w.style.display = t.value==='parcelado' ? 'block' : 'none';
+}
+
+// ══════════════════════════════════════════════
+//  MODAL — SALVAR
+// ══════════════════════════════════════════════
+function saveModal() {
+  const n    = (g('fn')||'').trim();
+  const v    = parseFloat(g('fv'))||0;
+  const tipo = g('ftipo')||'mensal';
+  const ia   = parseInt(g('fia'))||1;
+  const it   = parseInt(g('fit'))||1;
+  const m    = curM();
+
+  if(modalType==='edit_cartao') {
+    if(!n) return;
+    const antigo = editId;
+    gParcelas.forEach(p=>{ if(p.cartao===antigo) p.cartao=n; });
+    (mData[m].avulsas||[]).forEach(a=>{ if(a.cartao===antigo) a.cartao=n; });
+    closeModal(); render(); return;
+  }
+
+  // ── EDIÇÕES ──
+  if(editId !== null) {
+    if(modalType==='rec') {
+      const r = gReceitas.find(x=>x.id===editId) || mData[m].receitas.find(x=>x.id===editId);
+      if(r){ if(n)r.n=n; if(v>0)r.v=v; }
+    } else if(modalType==='fix') {
+      const f = gFixas.find(x=>x.id===editId);
+      if(f){
+        if(n) f.n=n; if(v>0) f.v=v;
+        if(tipo==='parcelado'){ f.ia=ia; f.it=it; f.sm=f.sm||0; f.parc=`${ia} de ${it}`; }
+        else { delete f.ia; delete f.it; f.parc='mensal'; }
+      }
+    } else if(modalType==='parc') {
+      const cartaoNovo = (g('fcartao')||'').trim();
+      const p = gParcelas.find(x=>x.id===editId);
+      if(p){ if(n)p.n=n; if(v>0)p.v=v; if(cartaoNovo)p.cartao=cartaoNovo; if(tipo==='parcelado'){p.ia=ia;p.it=it;} }
+      const a = (mData[m].avulsas||[]).find(x=>x.id===editId);
+      if(a){ if(n)a.n=n; if(v>0)a.v=v; if(cartaoNovo)a.cartao=cartaoNovo; }
+    } else if(modalType==='dia') {
+      const d = (mData[m].diadia||[]).find(x=>x.id===editId);
+      if(d){ if(n)d.n=n; if(v>0)d.v=v; const pg=g('fpgto'); if(pg)d.pgto=pg; }
+    }
+    closeModal(); render(); return;
+  }
+
+  // ── INSERÇÕES ──
+  if(modalType==='receita') {
+    if(!n||v<=0) return;
+    mData[m].receitas.push({id:uid(),n,v});
+  } else if(modalType==='fixa') {
+    if(!n||v<=0) return;
+    if(tipo==='parcelado') gFixas.push({id:uid(),n,parc:`${ia} de ${it}`,v,ia,it,sm:mi});
+    else gFixas.push({id:uid(),n,parc:'mensal',v});
+  } else if(modalType==='parcela') {
+    if(!n||v<=0) return;
+    const cartao = (g('fcartao')||'C6').trim();
+    if(tipo==='parcelado') gParcelas.push({id:uid(),cartao,n,v,ia,it,sm:mi});
+    else mData[m].avulsas.push({id:uid(),cartao,n,v});
+  } else if(modalType==='diadia') {
+    if(!n||v<=0) return;
+    mData[m].diadia.push({id:uid(),n,pgto:g('fpgto')||'',v});
+  }
+  closeModal(); render();
+}
+
+function saveObs() {
+  globalObs = document.getElementById('obs-ta')?.value || '';
+  const ok  = document.getElementById('obs-ok');
+  if(ok){ ok.classList.add('show'); setTimeout(()=>ok.classList.remove('show'),2000); }
+}
+
+function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+document.getElementById('overlay').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeModal(); });
+
+render();
+</script>
+<!-- BOTTOM NAV (mobile) -->
+<div class="bottom-nav">
+  <button class="bn-btn" onclick="nav(-1)">
+    <span class="bn-icon">←</span>
+    <span class="bn-label">Anterior</span>
+  </button>
+  <button class="bn-btn" onclick="nav(1)">
+    <span class="bn-icon">→</span>
+    <span class="bn-label">Próximo</span>
+  </button>
+  <button class="bn-btn add" onclick="openModal('receita')">
+    <span class="bn-icon">＋</span>
+    <span class="bn-label">Receita</span>
+  </button>
+  <button class="bn-btn add" onclick="openModal('fixa')">
+    <span class="bn-icon">📋</span>
+    <span class="bn-label">Fixa</span>
+  </button>
+  <button class="bn-btn add" onclick="openModal('parcela')">
+    <span class="bn-icon">💳</span>
+    <span class="bn-label">Cartão</span>
+  </button>
+  <button class="bn-btn add" onclick="openModal('diadia')">
+    <span class="bn-icon">🛒</span>
+    <span class="bn-label">Dia a dia</span>
+  </button>
+  <button class="bn-btn" onclick="addMonth()">
+    <span class="bn-icon">＋📅</span>
+    <span class="bn-label">Novo mês</span>
+  </button>
+</div>
+
+</body>
+</html>
