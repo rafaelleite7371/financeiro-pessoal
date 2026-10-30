@@ -532,6 +532,10 @@ tfoot td:first-child { text-align: left; font-family: 'IBM Plex Sans', sans-seri
     <span class="month-label" id="mlbl"></span>
     <button class="month-btn" onclick="nav(1)">&#8594;</button>
     <button class="add-month-btn" onclick="addMonth()">+ Mês</button>
+    <button class="add-month-btn" onclick="exportarDados()" style="margin-left:4px">⬇ Exportar</button>
+    <button class="add-month-btn" onclick="document.getElementById('import-input').click()" style="margin-left:4px">⬆ Importar</button>
+    <input type="file" id="import-input" accept=".json" style="display:none" onchange="importarDados(event)"/>
+    <button class="add-month-btn" onclick="limparDados()" style="opacity:.5;margin-left:4px">↺ Resetar</button>
   </div>
 </div>
 
@@ -1035,7 +1039,7 @@ const PGTO = ['Cartão C6','Cartão CAIXA','Cartão Recargapay','Cartão Will','
 function openModal(type) {
   modalType = type; editId = null;
   const titles = {receita:'Nova Receita', fixa:'Nova Despesa Fixa', parcela:'Nova Compra Parcelada', diadia:'Novo Gasto do Dia'};
-  const subs   = {receita:'Receita extra — restrita ao mês atual.', fixa:'Despesa global — aparece em todos os meses.', parcela:'Parcelada — avança automaticamente nos próximos meses.', diadia:'Gasto do dia — apenas neste mês.'};
+  const subs   = {receita:'Escolha se é fixa (todos os meses) ou extra (só neste mês).', fixa:'Despesa global — aparece em todos os meses.', parcela:'Parcelada — avança automaticamente nos próximos meses.', diadia:'Gasto do dia — apenas neste mês.'};
   document.getElementById('m-title').textContent = titles[type]||'Adicionar';
   document.getElementById('m-sub').textContent   = subs[type]||'';
   document.getElementById('m-fields').innerHTML  = fieldsFor(type, null, null);
@@ -1135,8 +1139,14 @@ function openEdit(type, m, id) {
 // ══════════════════════════════════════════════
 function fieldsFor(type, _, cartaoPre) {
   if(type==='receita') return `
-    <div class="field"><label>Nome</label><input id="fn" placeholder="Ex: Freelance, 13º salário..."/></div>
-    <div class="field"><label>Valor (R$)</label><input id="fv" type="number" step="0.01" placeholder="0,00"/></div>`;
+    <div class="field"><label>Nome</label><input id="fn" placeholder="Ex: Salário, Freelance, 13º..."/></div>
+    <div class="mrow">
+      <div class="field"><label>Valor (R$)</label><input id="fv" type="number" step="0.01" placeholder="0,00"/></div>
+      <div class="field"><label>Tipo</label><select id="ftipo">
+        <option value="extra">Extra (só este mês)</option>
+        <option value="fixa">Fixa (todos os meses)</option>
+      </select></div>
+    </div>`;
   if(type==='fixa') return `
     <div class="field"><label>Descrição</label><input id="fn" placeholder="Ex: Streaming, Academia..."/></div>
     <div class="mrow">
@@ -1230,7 +1240,8 @@ function saveModal() {
   // ── INSERÇÕES ──
   if(modalType==='receita') {
     if(!n||v<=0) return;
-    mData[m].receitas.push({id:uid(),n,v});
+    if(tipo==='fixa') gReceitas.push({id:uid(),n,v});
+    else mData[m].receitas.push({id:uid(),n,v});
   } else if(modalType==='fixa') {
     if(!n||v<=0) return;
     if(tipo==='parcelado') gFixas.push({id:uid(),n,parc:`${ia} de ${it}`,v,ia,it,sm:mi});
@@ -1256,7 +1267,191 @@ function saveObs() {
 function closeModal() { document.getElementById('overlay').classList.remove('open'); }
 document.getElementById('overlay').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeModal(); });
 
+// ══════════════════════════════════════════════
+//  GOOGLE SHEETS — SINCRONIZAÇÃO
+// ══════════════════════════════════════════════
+const CLIENT_ID   = '132325163480-q9f7ap3d3b17jel24tv9i4g3jcqq5ki1.apps.googleusercontent.com';
+const SHEET_ID    = '19LXpuuY1VT6db9buL3MEvYwfC8AYiCEe';
+const SHEET_RANGE = 'Dados!A1';
+const SCOPES      = 'https://www.googleapis.com/auth/spreadsheets';
+const STORAGE_KEY = 'planilha_financeira_v1';
+
+let gsiToken = null;
+let syncTimeout = null;
+let syncStatus = 'idle'; // idle | saving | loading | error
+
+// ── Indicador de status no topbar ──
+function setSyncStatus(status, msg) {
+  syncStatus = status;
+  const el = document.getElementById('save-ind');
+  if(!el) return;
+  const map = {
+    idle:    {text:'● salvo',     color:'rgba(110,231,168,.6)'},
+    saving:  {text:'⟳ salvando…', color:'rgba(255,200,60,.9)'},
+    loading: {text:'⟳ carregando…',color:'rgba(255,200,60,.9)'},
+    error:   {text:'✕ erro sync', color:'rgba(255,100,100,.9)'},
+    offline: {text:'● local',     color:'rgba(255,255,255,.35)'},
+  };
+  const s = map[status] || map.idle;
+  el.textContent = msg || s.text;
+  el.style.color = s.color;
+}
+
+// ── localStorage como cache local ──
+function salvarLocal() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(
+      {seq,months,mi,globalObs,gReceitas,gFixas,gParcelas,mData}
+    ));
+  } catch(e) {}
+}
+function carregarLocal() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const d = JSON.parse(raw);
+    if(!d.months||!d.gFixas) return false;
+    seq=d.seq??seq; months=d.months??months; mi=d.mi??0;
+    globalObs=d.globalObs??''; gReceitas=d.gReceitas??gReceitas;
+    gFixas=d.gFixas??gFixas; gParcelas=d.gParcelas??gParcelas;
+    if(d.mData) months.forEach(m=>{ mData[m]=d.mData[m]??{receitas:[],avulsas:[],diadia:[]}; });
+    return true;
+  } catch(e) { return false; }
+}
+
+// ── Google Identity Services (login) ──
+function iniciarLogin() {
+  if(typeof google === 'undefined') {
+    setSyncStatus('error','✕ API offline'); return;
+  }
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: (resp) => {
+      if(resp.error) { setSyncStatus('error'); return; }
+      gsiToken = resp.access_token;
+      setSyncStatus('loading');
+      carregarSheets();
+    }
+  });
+  client.requestAccessToken({prompt:''});
+}
+
+// ── Ler dados da planilha ──
+async function carregarSheets() {
+  setSyncStatus('loading');
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_RANGE}`;
+    const res = await fetch(url, {headers:{Authorization:'Bearer '+gsiToken}});
+    if(res.status===401){gsiToken=null;iniciarLogin();return;}
+    const data = await res.json();
+    const cell = data.values?.[0]?.[0];
+    if(cell) {
+      const d = JSON.parse(cell);
+      if(d.months&&d.gFixas) {
+        seq=d.seq??seq; months=d.months; mi=d.mi??0;
+        globalObs=d.globalObs??''; gReceitas=d.gReceitas??gReceitas;
+        gFixas=d.gFixas??gFixas; gParcelas=d.gParcelas??gParcelas;
+        if(d.mData) months.forEach(m=>{ mData[m]=d.mData[m]??{receitas:[],avulsas:[],diadia:[]}; });
+        salvarLocal();
+      }
+    }
+    setSyncStatus('idle');
+    render();
+  } catch(e) {
+    setSyncStatus('error'); render();
+  }
+}
+
+// ── Salvar dados na planilha ──
+async function salvarSheets() {
+  if(!gsiToken) { salvarLocal(); setSyncStatus('offline'); return; }
+  setSyncStatus('saving');
+  try {
+    const payload = JSON.stringify(
+      {seq,months,mi,globalObs,gReceitas,gFixas,gParcelas,mData,
+       savedAt:new Date().toISOString()}
+    );
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_RANGE}?valueInputOption=RAW`;
+    const res = await fetch(url, {
+      method:'PUT',
+      headers:{Authorization:'Bearer '+gsiToken,'Content-Type':'application/json'},
+      body: JSON.stringify({range:SHEET_RANGE, majorDimension:'ROWS', values:[[payload]]})
+    });
+    if(res.status===401){gsiToken=null;iniciarLogin();return;}
+    salvarLocal();
+    setSyncStatus('idle');
+  } catch(e) {
+    salvarLocal(); setSyncStatus('error');
+  }
+}
+
+// ── Salvar com debounce (300ms após última edição) ──
+function salvarDados() {
+  salvarLocal();
+  clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(salvarSheets, 300);
+}
+
+function limparDados() {
+  if(!confirm('Apagar todos os dados e voltar ao estado inicial?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+function exportarDados() {
+  const dados = {seq,months,mi,globalObs,gReceitas,gFixas,gParcelas,mData,
+    exportadoEm:new Date().toLocaleString('pt-BR')};
+  const blob = new Blob([JSON.stringify(dados,null,2)],{type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download=`financeiro_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.json`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+function importarDados(event) {
+  const file = event.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const d = JSON.parse(e.target.result);
+      if(!d.months||!d.gFixas){alert('Arquivo inválido.');return;}
+      if(!confirm(`Importar dados de ${d.exportadoEm||'data desconhecida'}?\nIsso substituirá todos os dados atuais.`))return;
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(d));
+      location.reload();
+    } catch(e){alert('Erro ao ler o arquivo.');}
+  };
+  reader.readAsText(file);
+  event.target.value='';
+}
+
+// ── Intercepta render para salvar após mudanças ──
+const _render = render;
+window.render = function(){ _render(); salvarDados(); };
+
+// ── Inicialização ──
+// 1. Carrega cache local imediatamente (sem piscar)
+carregarLocal();
 render();
+
+// 2. Indicador no topbar
+const saveIndicator = document.createElement('span');
+saveIndicator.id = 'save-ind';
+saveIndicator.style.cssText = 'font-size:10px;margin-left:12px;transition:color .4s;cursor:pointer;';
+saveIndicator.title = 'Clique para sincronizar manualmente';
+saveIndicator.onclick = () => { if(gsiToken) salvarSheets(); else iniciarLogin(); };
+saveIndicator.textContent = '● conectando…';
+saveIndicator.style.color = 'rgba(255,255,255,.4)';
+document.querySelector('.topbar').appendChild(saveIndicator);
+
+// 3. Carrega script Google Identity Services e faz login silencioso
+const gsiScript = document.createElement('script');
+gsiScript.src = 'https://accounts.google.com/gsi/client';
+gsiScript.onload = () => setTimeout(iniciarLogin, 500);
+gsiScript.onerror = () => setSyncStatus('offline');
+document.head.appendChild(gsiScript);
+
+
 </script>
 <!-- BOTTOM NAV (mobile) -->
 <div class="bottom-nav">
